@@ -7,6 +7,7 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "open": "node scripts/open-bridge.mjs",
+    "connect": "powershell -ExecutionPolicy Bypass -File scripts/connect-bridge.ps1",
     "target": "node scripts/set-target.mjs",
     "inspect": "node scripts/inspect-target.mjs",
     "backup": "node scripts/backup-target.mjs"

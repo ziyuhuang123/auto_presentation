@@ -1,4 +1,5 @@
 node_modules
 .bridge.stdout.log
 .bridge.stderr.log
+config/bridge-state.json
 .tmp

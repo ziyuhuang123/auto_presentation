@@ -89,10 +89,12 @@ function collectBody(req) {
   });
 }
 
-const config = await loadConfig();
+const initialConfig = await loadConfig();
+const listenPort = initialConfig.port;
 
 const server = createServer(async (req, res) => {
   try {
+    const config = await loadConfig();
     const url = new URL(req.url, `http://${req.headers.host}`);
 
     if (req.method === "GET" && url.pathname === "/api/diagram") {
@@ -122,7 +124,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/config") {
       return json(res, 200, {
         diagramPath: config.diagramPath,
-        port: config.port,
+        port: listenPort,
       });
     }
 
@@ -139,7 +141,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(config.port, "127.0.0.1", () => {
-  console.log(`auto-drawio bridge listening on http://127.0.0.1:${config.port}`);
-  console.log(`diagramPath=${config.diagramPath}`);
+server.listen(listenPort, "127.0.0.1", () => {
+  console.log(`auto-drawio bridge listening on http://127.0.0.1:${listenPort}`);
+  console.log(`diagramPath=${initialConfig.diagramPath}`);
 });
