@@ -1,26 +1,33 @@
-# Auto Draw.io Workflow
+# auto_drawio 仓库规则
 
-This repository is the default workspace for the user's draw.io automation workflow.
+这个仓库是用户默认的 draw.io / diagrams.net 自动化工作区。
 
-## Target file
+## 当前目标文件
 
-- Always read `config/target.json` before modifying a diagram.
-- If the user asks to edit a diagram without naming a file, use `config/target.json`.
-- If the user wants to switch files, update `config/target.json` first.
+- 修改图之前，先读取 `config/target.json`。
+- 如果用户没有在当前对话里明确指定文件路径，默认使用 `config/target.json` 里的 `diagramPath`。
+- 如果用户在当前对话里给了新的 `.drawio` 文件路径，先更新 `config/target.json`，再修改该文件。
 
-## Editing rules
+## 交互约定
 
-- Preserve the user's manual alignment choices unless the user explicitly asks for a re-layout.
-- Prefer compact layouts over wide empty gaps.
-- Keep peer modules aligned on the same row when they serve the same stage.
-- Center downstream execution blocks under their immediate upstream modules.
-- Keep section badges near the top-left of a module and mode badges near the top-right.
-- Use orthogonal edges and minimize crossings, detours, and long backtracking routes.
-- Avoid negative canvas coordinates unless the user explicitly wants off-canvas spacing.
-- Keep titles centered within modules and keep badge offsets visually consistent.
+- 默认认为用户正在浏览 `http://127.0.0.1:<port>/` 这个 bridge 页面。
+- 修改目标 `.drawio` 文件后，不要让用户手动去 `File > Open` 重新打开文件。
+- 如果本次修改涉及 `public/app.js`，提醒用户手动刷新 bridge 页面一次，让新脚本生效。
+- 如果用户没有说明仓库，但任务明显是“继续使用 auto_drawio 工作流”，优先使用本仓库。
 
-## Workflow
+## 布局与排版规则
 
-- Assume the user is watching the bridge page at `http://127.0.0.1:<port>/`.
-- After changing the target `.drawio` file, do not tell the user to reopen the file manually.
-- If `public/app.js` changes, remind the user to refresh the bridge page once so the new bridge logic loads.
+- 优先保留用户手动调过的布局，除非用户明确要求整体重排。
+- 优先紧凑布局，避免大片空白。
+- 同层模块尽量放在同一行，并保持稳定对齐。
+- 下游执行模块优先放在其直接上游模块的正下方居中位置。
+- 章节角标优先放模块左上角，模式角标优先放右上角。
+- 连线优先使用正交线，尽量减少交叉、绕路和回折。
+- 除非用户明确要求，否则不要把重要图形放到负坐标区域。
+- 模块标题尽量居中，角标偏移保持一致。
+
+## 修改策略
+
+- 做局部优化时，优先微调坐标和连线，不要顺手重排整张图。
+- 大改前优先建议或执行 `npm run backup`。
+- 如果用户说“按我现在这版风格继续”，按现有图面风格延续，而不是套新的模板。
