@@ -1,0 +1,122 @@
+:root {
+  color-scheme: light;
+  --bg: #eef3f8;
+  --panel: #ffffff;
+  --text: #102033;
+  --muted: #4e6278;
+  --border: #d8e1eb;
+  --accent: #0f62fe;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(70, 160, 255, 0.16), transparent 20%),
+    linear-gradient(180deg, #f7fafc, var(--bg));
+  color: var(--text);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+}
+
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+.topbar h1 {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.status-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.status-label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 0.9rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #c5d0dd;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff, #f4f7fb);
+  cursor: pointer;
+  font: inherit;
+}
+
+.editor-shell {
+  padding: 12px;
+}
+
+#drawio-frame {
+  width: 100%;
+  height: calc(100vh - 101px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    flex-direction: column;
+  }
+
+  #drawio-frame {
+    height: calc(100vh - 180px);
+  }
+}

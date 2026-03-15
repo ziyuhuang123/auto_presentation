@@ -1,0 +1,4 @@
+node_modules
+.bridge.stdout.log
+.bridge.stderr.log
+.tmp

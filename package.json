@@ -1,0 +1,14 @@
+{
+  "name": "auto-drawio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "open": "node scripts/open-bridge.mjs",
+    "target": "node scripts/set-target.mjs",
+    "inspect": "node scripts/inspect-target.mjs",
+    "backup": "node scripts/backup-target.mjs"
+  }
+}

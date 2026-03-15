@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Draw.io Bridge</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Auto Draw.io</div>
+          <h1>本地文件常驻编辑</h1>
+        </div>
+        <div class="toolbar">
+          <div class="status-block">
+            <span class="status-label">文件</span>
+            <code id="diagram-path">Loading...</code>
+          </div>
+          <div class="status-block">
+            <span class="status-label">状态</span>
+            <span id="save-status">Starting</span>
+          </div>
+          <label class="toggle">
+            <input id="pause-reload" type="checkbox" />
+            <span>暂停外部自动重载</span>
+          </label>
+          <button id="reload-button" type="button">强制重载文件</button>
+        </div>
+      </header>
+
+      <main class="editor-shell">
+        <iframe
+          id="drawio-frame"
+          title="diagrams.net editor"
+          referrerpolicy="no-referrer"
+        ></iframe>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
