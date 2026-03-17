@@ -1,11 +1,11 @@
 import { createServer } from "node:http";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const rootDir = fileURLToPath(new URL(".", import.meta.url));
+import { readConfig, resolveCliConfig, rootDir } from "./scripts/bridge-config.mjs";
+
 const publicDir = join(rootDir, "public");
-const configPath = join(rootDir, "config", "target.json");
+const { configPath } = resolveCliConfig(process.argv.slice(2));
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -15,8 +15,7 @@ const mimeTypes = {
 };
 
 async function loadConfig() {
-  const raw = await readFile(configPath, "utf8");
-  const config = JSON.parse(raw);
+  const config = await readConfig(configPath);
 
   if (!config.diagramPath) {
     throw new Error("config/target.json must define diagramPath");
@@ -125,6 +124,7 @@ const server = createServer(async (req, res) => {
       return json(res, 200, {
         diagramPath: config.diagramPath,
         port: listenPort,
+        configPath,
       });
     }
 
@@ -144,4 +144,5 @@ const server = createServer(async (req, res) => {
 server.listen(listenPort, "127.0.0.1", () => {
   console.log(`auto-drawio bridge listening on http://127.0.0.1:${listenPort}`);
   console.log(`diagramPath=${initialConfig.diagramPath}`);
+  console.log(`configPath=${configPath}`);
 });

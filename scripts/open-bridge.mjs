@@ -1,11 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readConfig, resolveCliConfig } from "./bridge-config.mjs";
 
-const rootDir = fileURLToPath(new URL("../", import.meta.url));
-const configPath = join(rootDir, "config", "target.json");
-const config = JSON.parse(await readFile(configPath, "utf8"));
+const { configPath } = resolveCliConfig(process.argv.slice(2));
+const config = await readConfig(configPath);
 const url = `http://127.0.0.1:${config.port}`;
 
 if (process.platform === "win32") {
@@ -17,3 +14,4 @@ if (process.platform === "win32") {
 }
 
 console.log(`Opened ${url}`);
+console.log(`Config: ${configPath}`);

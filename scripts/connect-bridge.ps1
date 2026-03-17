@@ -1,16 +1,15 @@
 param(
   [Parameter(Position = 0)]
   [string]$DiagramPath = $env:AUTO_DRAWIO_TARGET,
+  [int]$Port,
+  [string]$ConfigPath,
   [switch]$OpenBrowser
 )
 
 $ErrorActionPreference = "Stop"
 
 $rootDir = Split-Path -Parent $PSScriptRoot
-$configPath = Join-Path $rootDir "config\target.json"
-$statePath = Join-Path $rootDir "config\bridge-state.json"
-$stdoutPath = Join-Path $rootDir ".bridge.stdout.log"
-$stderrPath = Join-Path $rootDir ".bridge.stderr.log"
+$defaultConfigPath = Join-Path $rootDir "config\target.json"
 
 function Read-JsonFile {
   param([string]$Path)
@@ -24,9 +23,123 @@ function Write-JsonFile {
     [object]$Value
   )
 
+  $parent = Split-Path -Parent $Path
+  if ($parent) {
+    New-Item -ItemType Directory -Force -Path $parent | Out-Null
+  }
+
   $json = ($Value | ConvertTo-Json -Depth 10) + [Environment]::NewLine
   $encoding = [System.Text.UTF8Encoding]::new($false)
   [System.IO.File]::WriteAllText($Path, $json, $encoding)
+}
+
+function Copy-ConfigObject {
+  param([object]$Source)
+
+  $copy = [ordered]@{}
+
+  if ($null -eq $Source) {
+    return $copy
+  }
+
+  foreach ($property in $Source.PSObject.Properties) {
+    $copy[$property.Name] = $property.Value
+  }
+
+  return $copy
+}
+
+function Test-SamePath {
+  param(
+    [string]$Left,
+    [string]$Right
+  )
+
+  return [string]::Equals(
+    [System.IO.Path]::GetFullPath($Left),
+    [System.IO.Path]::GetFullPath($Right),
+    [System.StringComparison]::OrdinalIgnoreCase
+  )
+}
+
+function Resolve-BridgeConfigPath {
+  param(
+    [string]$RootDir,
+    [string]$DefaultConfigPath,
+    [string]$ConfigPath,
+    [int]$Port,
+    [bool]$HasExplicitPort
+  )
+
+  if ($ConfigPath) {
+    return [System.IO.Path]::GetFullPath($ConfigPath)
+  }
+
+  if ($HasExplicitPort) {
+    $instanceDir = Join-Path $RootDir "config\instances"
+    New-Item -ItemType Directory -Force -Path $instanceDir | Out-Null
+    return Join-Path $instanceDir ("port-{0}.json" -f $Port)
+  }
+
+  return $DefaultConfigPath
+}
+
+function Resolve-StatePath {
+  param(
+    [string]$ResolvedConfigPath,
+    [string]$DefaultConfigPath
+  )
+
+  if (Test-SamePath -Left $ResolvedConfigPath -Right $DefaultConfigPath) {
+    return Join-Path $rootDir "config\bridge-state.json"
+  }
+
+  $parent = Split-Path -Parent $ResolvedConfigPath
+  $stem = [System.IO.Path]::GetFileNameWithoutExtension($ResolvedConfigPath)
+  return Join-Path $parent "$stem.state.json"
+}
+
+function Resolve-LogPath {
+  param(
+    [string]$ResolvedConfigPath,
+    [string]$DefaultConfigPath,
+    [string]$Kind
+  )
+
+  if (Test-SamePath -Left $ResolvedConfigPath -Right $DefaultConfigPath) {
+    return Join-Path $rootDir ".bridge.$Kind.log"
+  }
+
+  $stem = [System.IO.Path]::GetFileNameWithoutExtension($ResolvedConfigPath)
+  return Join-Path $rootDir ".bridge.$stem.$Kind.log"
+}
+
+function Ensure-BridgeConfig {
+  param(
+    [string]$ResolvedConfigPath,
+    [string]$DefaultConfigPath,
+    [int]$Port,
+    [bool]$HasExplicitPort
+  )
+
+  if (Test-Path -LiteralPath $ResolvedConfigPath -PathType Leaf) {
+    $config = Copy-ConfigObject (Read-JsonFile -Path $ResolvedConfigPath)
+  } elseif (Test-Path -LiteralPath $DefaultConfigPath -PathType Leaf) {
+    $config = Copy-ConfigObject (Read-JsonFile -Path $DefaultConfigPath)
+  } else {
+    $config = [ordered]@{
+      diagramPath = ""
+      port = 4318
+    }
+  }
+
+  if ($HasExplicitPort) {
+    $config.port = $Port
+  } elseif (-not $config.port) {
+    $config.port = 4318
+  }
+
+  return $config
 }
 
 function Get-BridgeConfig {
@@ -90,7 +203,23 @@ function Stop-TrackedBridge {
   }
 }
 
-$config = Read-JsonFile -Path $configPath
+$hasExplicitPort = $PSBoundParameters.ContainsKey("Port")
+
+$resolvedConfigPath = Resolve-BridgeConfigPath `
+  -RootDir $rootDir `
+  -DefaultConfigPath $defaultConfigPath `
+  -ConfigPath $ConfigPath `
+  -Port $Port `
+  -HasExplicitPort $hasExplicitPort
+
+$statePath = Resolve-StatePath -ResolvedConfigPath $resolvedConfigPath -DefaultConfigPath $defaultConfigPath
+$stdoutPath = Resolve-LogPath -ResolvedConfigPath $resolvedConfigPath -DefaultConfigPath $defaultConfigPath -Kind "stdout"
+$stderrPath = Resolve-LogPath -ResolvedConfigPath $resolvedConfigPath -DefaultConfigPath $defaultConfigPath -Kind "stderr"
+$config = Ensure-BridgeConfig `
+  -ResolvedConfigPath $resolvedConfigPath `
+  -DefaultConfigPath $defaultConfigPath `
+  -Port $Port `
+  -HasExplicitPort $hasExplicitPort
 
 if ($DiagramPath) {
   $resolvedPath = [System.IO.Path]::GetFullPath($DiagramPath)
@@ -104,11 +233,16 @@ if ($DiagramPath) {
   }
 
   $config.diagramPath = $resolvedPath
-  Write-JsonFile -Path $configPath -Value $config
 }
+
+Write-JsonFile -Path $resolvedConfigPath -Value $config
 
 $port = [int]$config.port
 $targetPath = $config.diagramPath
+
+if (-not $targetPath) {
+  throw "Bridge config must define diagramPath"
+}
 
 try {
   $runningConfig = Get-BridgeConfig -Port $port
@@ -120,6 +254,7 @@ try {
 
     Write-Output "Bridge already ready: http://127.0.0.1:$port/"
     Write-Output "Diagram: $targetPath"
+    Write-Output "Config: $resolvedConfigPath"
     exit 0
   }
 
@@ -133,11 +268,13 @@ try {
     pid = $null
     port = $port
     diagramPath = $runningConfig.diagramPath
+    configPath = $resolvedConfigPath
     startedAt = (Get-Date).ToString("o")
   }
 
   Write-Output "Bridge retargeted: http://127.0.0.1:$port/"
   Write-Output "Diagram: $($runningConfig.diagramPath)"
+  Write-Output "Config: $resolvedConfigPath"
   exit 0
 } catch {
 }
@@ -147,7 +284,7 @@ Stop-TrackedBridge -Path $statePath
 $nodePath = (Get-Command node -ErrorAction Stop).Source
 $process = Start-Process `
   -FilePath $nodePath `
-  -ArgumentList "server.mjs" `
+  -ArgumentList @("server.mjs", "--config", $resolvedConfigPath) `
   -WorkingDirectory $rootDir `
   -WindowStyle Hidden `
   -RedirectStandardOutput $stdoutPath `
@@ -160,6 +297,7 @@ Write-JsonFile -Path $statePath -Value @{
   pid = $process.Id
   port = $port
   diagramPath = $readyConfig.diagramPath
+  configPath = $resolvedConfigPath
   startedAt = (Get-Date).ToString("o")
 }
 
@@ -169,4 +307,5 @@ if ($OpenBrowser) {
 
 Write-Output "Bridge ready: http://127.0.0.1:$port/"
 Write-Output "Diagram: $($readyConfig.diagramPath)"
+Write-Output "Config: $resolvedConfigPath"
 Write-Output "PID: $($process.Id)"

@@ -1,14 +1,92 @@
-如何使用：
+# auto_drawio
 
-打开 Codex，告知当前需要修改的 `.drawio` 文件路径，然后让 Codex 连接 bridge。推荐直接这样说：
+`draw.io / diagrams.net` bridge for editing local `.drawio` files through a browser page and syncing changes back to disk.
 
-我现在希望修改的文件是：C:\文件备份\new_report\0313\linear_attn.drawio
-帮我连接服务器：http://127.0.0.1:4318/
+## New in this version
 
-现在这套 workflow 会自动做三件事：
+The bridge is no longer limited to a single shared target file.
 
-1. 更新 `config/target.json`
-2. 确保 `http://127.0.0.1:4318/` 的 bridge 已启动
-3. 如果 bridge 已在运行，直接切换到新目标文件，不需要再手动 `File > Open`
+You can now run any number of isolated bridge instances in parallel:
 
-之所以还需要搭一个服务器桥接，是因为原始draw.io页面上，大模型的修改不能实时被显现，必须每次重新打开同一个文件。此服务器上会每次自动刷新。
+- one port per `.drawio` file
+- one config file per instance
+- one state file per instance
+- one stdout / stderr log pair per instance
+
+This fixes the old behavior where multiple browser windows pointed at the same port and kept stealing `config/target.json` from each other.
+
+## Default behavior
+
+The legacy single-instance workflow is still supported:
+
+- config file: `config/target.json`
+- default port: `4318`
+
+Example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\connect-bridge.ps1 -DiagramPath "C:\path\to\file.drawio"
+```
+
+## Multi-instance behavior
+
+The bridge now supports any number of independent instances.
+
+Each instance gets its own:
+
+- port
+- config file
+- state file
+- stdout / stderr log
+
+When you pass `-Port`, the bridge uses:
+
+- config: `config/instances/port-<port>.json`
+- state: `config/instances/port-<port>.state.json`
+
+Example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\connect-bridge.ps1 -Port 4319 -DiagramPath "C:\path\to\a.drawio"
+powershell -ExecutionPolicy Bypass -File .\scripts\connect-bridge.ps1 -Port 4320 -DiagramPath "C:\path\to\b.drawio"
+powershell -ExecutionPolicy Bypass -File .\scripts\connect-bridge.ps1 -Port 4321 -DiagramPath "C:\path\to\c.drawio"
+```
+
+That gives you:
+
+- `http://127.0.0.1:4319/` for `a.drawio`
+- `http://127.0.0.1:4320/` for `b.drawio`
+- `http://127.0.0.1:4321/` for `c.drawio`
+
+These instances do not share `config/target.json`, so they do not steal each other's target file.
+
+## Helper scripts
+
+All helper scripts now support `--port <port>` in addition to the default config:
+
+```powershell
+node .\scripts\inspect-target.mjs --port 4319
+node .\scripts\backup-target.mjs --port 4319
+node .\scripts\open-bridge.mjs --port 4319
+node .\scripts\set-target.mjs --port 4319 "C:\path\to\file.drawio"
+```
+
+You can also target a specific config file directly:
+
+```powershell
+node .\scripts\open-bridge.mjs --config .\config\instances\port-4319.json
+```
+
+## Recommended Codex workflow
+
+Tell Codex both the `.drawio` path and the bridge URL you want. For isolated work, prefer a dedicated port:
+
+```text
+The diagram file is:
+C:\path\to\paper.drawio
+
+Connect the bridge here:
+http://127.0.0.1:4319/
+```
+
+If the instance is already running on that port, `connect-bridge.ps1` retargets that instance only.

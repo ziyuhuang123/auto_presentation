@@ -1,10 +1,9 @@
-import { copyFile, readFile } from "node:fs/promises";
+import { copyFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readConfig, resolveCliConfig } from "./bridge-config.mjs";
 
-const rootDir = fileURLToPath(new URL("../", import.meta.url));
-const configPath = join(rootDir, "config", "target.json");
-const config = JSON.parse(await readFile(configPath, "utf8"));
+const { configPath } = resolveCliConfig(process.argv.slice(2));
+const config = await readConfig(configPath);
 
 const source = config.diagramPath;
 const extension = extname(source);
@@ -15,3 +14,4 @@ const target = join(dirname(source), `${stem}.bak_${stamp}${extension}`);
 await copyFile(source, target);
 
 console.log(`Backup created: ${target}`);
+console.log(`Config: ${configPath}`);
