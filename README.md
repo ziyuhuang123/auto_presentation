@@ -2,8 +2,7 @@
 
 打开 Codex，告知当前需要修改的 `.drawio` 文件路径，然后让 Codex 连接 bridge。推荐直接这样说：
 
-我现在希望修改的文件是：C:\文件备份\new_report\0313\linear_attn.drawio
-帮我连接服务器：http://127.0.0.1:4318/
+帮我在本文件夹下创建draw.io文件，基于此文件夹C:\文件备份\auto_drawio，帮我连接服务器：http://127.0.0.1:4318/。绘图要求是：
 
 现在这套 workflow 会自动做三件事：
 
