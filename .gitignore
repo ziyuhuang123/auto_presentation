@@ -1,8 +1,9 @@
-node_modules
-.bridge.stdout.log
-.bridge.stderr.log
-.bridge.port-*.stdout.log
-.bridge.port-*.stderr.log
-config/bridge-state.json
-config/instances/
-.tmp
+auto_drawio/node_modules
+auto_drawio/.bridge.stdout.log
+auto_drawio/.bridge.stderr.log
+auto_drawio/.bridge.port-*.stdout.log
+auto_drawio/.bridge.port-*.stderr.log
+auto_drawio/config/bridge-state.json
+auto_drawio/config/instances/
+auto_drawio/.tmp
+auto_html/outputs/
